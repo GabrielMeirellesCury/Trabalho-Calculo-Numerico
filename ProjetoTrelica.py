@@ -175,26 +175,28 @@ u_free_indices = gdl_livres.copy()
 # PASSO 8: APRESENTAR O SISTEMA REDUZIDO
 # ============================================================
 
-print("Matriz global K:")
-print(K)
 
-print("\nVetor global f:")
-print(f)
+if __name__ == "__main__":
+    print("Matriz global K:")
+    print(K)
 
-print("\nGraus de liberdade restringidos:")
-print(gdl_restringidos)
+    print("\nVetor global f:")
+    print(f)
 
-print("\nGraus de liberdade livres:")
-print(gdl_livres)
+    print("\nGraus de liberdade restringidos:")
+    print(gdl_restringidos)
 
-print("\nMatriz reduzida K_free:")
-print(K_free)
+    print("\nGraus de liberdade livres:")
+    print(gdl_livres)
 
-print("\nVetor reduzido f_free:")
-print(f_free)
+    print("\nMatriz reduzida K_free:")
+    print(K_free)
 
-print("\nÍndices globais associados ao vetor u_free:")
-print(u_free_indices)
+    print("\nVetor reduzido f_free:")
+    print(f_free)
 
-print("\nSistema reduzido montado:")
-print("K_free @ u_free = f_free")
+    print("\nÍndices globais associados ao vetor u_free:")
+    print(u_free_indices)
+
+    print("\nSistema reduzido montado:")
+    print("K_free @ u_free = f_free")
