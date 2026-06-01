@@ -270,18 +270,88 @@ def resolver_sistema_jacobi(K_free, f_free, x0=None, tol=1e-10, maxIteracoes=100
 #     print(f"\nVetor global u [m]:\n{u}\n")
 
 
+# ============================================
+# 4. MÉTODO DE GAUSS-SEIDEL
+# ============================================
+def gauss_seidel(A, b, x0=None, tol=1e-10, maxIteracoes=1000):
+    n = len(A)
+    if x0 is None:
+        x = [0.0] * n
+    else:
+        x = list(x0)
+    for iteracao in range(maxIteracoes):
+        x_anterior = x.copy()
+        for i in range(n):
+            soma = 0.0
+            for j in range(n):
+                if j != i:
+                    soma += A[i][j] * x[j]   # usa x[j] já atualizado nesta iteração (j < i) ou do passo anterior (j > i)
+            x[i] = (b[i] - soma) / A[i][i]
+        for valor in x:
+            if np.isnan(valor) or np.isinf(valor):
+                return None, iteracao + 1, float("inf")
+        erro = 0.0
+        for i in range(n):
+            diferenca = abs(x[i] - x_anterior[i])
+            if diferenca > erro:
+                erro = diferenca
+        if erro < tol:
+            return x, iteracao + 1, erro
+    return x, maxIteracoes, erro
+
+
+def resolver_sistema_gauss_seidel(K_free, f_free, x0=None, tol=1e-10, maxIteracoes=1000):
+    try:
+        K = [list(map(float, linha)) for linha in K_free]
+        f = list(map(float, f_free))
+    except Exception:
+        K = K_free
+        f = f_free
+    n = len(f)
+    u_free, iteracoes, erro = gauss_seidel(K, f, x0=x0, tol=tol, maxIteracoes=maxIteracoes)
+    n_ops_por_iteracao = 2 * n**2
+    info = {
+        "iteracoes": iteracoes,
+        "erro_final": erro,
+        "n_ops_por_iteracao": n_ops_por_iteracao,
+        "n_ops_total": n_ops_por_iteracao * iteracoes,
+    }
+    return u_free, info
+
+
+# Execução Gauss-Seidel
+# u_free, info = resolver_sistema_gauss_seidel(K_free, f_free, tol=1e-10, maxIteracoes=10000)
+# print("=" * 55)
+# print("4. MÉTODO: GAUSS-SEIDEL")
+# print("=" * 55)
+# if u_free is None:
+#     print("Divergiu")
+# else:
+#     u = np.zeros(n_gdl)
+#     for a in range(len(gdl_livres)):
+#         u[gdl_livres[a]] = u_free[a]
+#     print(f"u_free (Gauss-Seidel): {[round(v, 8) for v in u_free]}")
+#     print(f"\nErro final Gauss-Seidel: {info['erro_final']:.2e}")
+#     print(f"Número de iterações: {info['iteracoes']}")
+#     print(f"\nDeslocamento máximo |u|: {max(abs(v) for v in u_free):.6e} m")
+#     print(f"\nOperações estimadas:")
+#     print(f"  Por iteração : {info['n_ops_por_iteracao']} flops")
+#     print(f"  Total        : {info['n_ops_total']} flops")
+#     print(f"\nVetor global u [m]:\n{u}\n")
+
+
 #F = 1000*beta
 for i in range(1, 101):
     print("=" * 55)
-    print("Beta = " + str(i)) 
-    # print(i)
+    print("Beta = " + str(i))
     print("=" * 55)
     f_atual = f_free * i
 
     u_free_gauss, info_gauss = resolver_sistema_gauss(K_free, f_atual)
     u_free_lu, info_lu = resolver_sistema_LU(K_free, f_atual)
     u_free_jacobi, info_jacobi = resolver_sistema_jacobi(K_free, f_atual, tol=1e-10, maxIteracoes=10000)
-    
+    u_free_gs, info_gs = resolver_sistema_gauss_seidel(K_free, f_atual, tol=1e-10, maxIteracoes=10000)
+
     u_gauss = np.zeros(n_gdl)
     for a in range(len(gdl_livres)):
         u_gauss[gdl_livres[a]] = u_free_gauss[a]
@@ -314,26 +384,43 @@ for i in range(1, 101):
     print(f"  Total         : {info_lu['n_ops_total']} flops")
     print(f"\nVetor global u [m]:\n{u_lu}\n")
 
-    #Prints jacobi
+    # Prints Jacobi
     print("=" * 55)
     print("3. MÉTODO: JACOBI")
     print("=" * 55)
     if u_free_jacobi is None:
         print("Divergiu")
-
     else:
         u_jacobi = np.zeros(n_gdl)
         for a in range(len(gdl_livres)):
             u_jacobi[gdl_livres[a]] = u_free_jacobi[a]
-        # Prints Jacobi
-        print(f"u_free (LU)  : {[round(v, 8) for v in u_free_jacobi]}")
+        print(f"u_free (Jacobi): {[round(v, 8) for v in u_free_jacobi]}")
+        print(f"\nErro final Jacobi: {info_jacobi['erro_final']:.2e}")
+        print(f"Número de iterações: {info_jacobi['iteracoes']}")
         print(f"\nDeslocamento máximo |u|: {max(abs(v) for v in u_free_jacobi):.6e} m")
         print(f"\nOperações estimadas:")
-        print(f"  Fatoração LU  : {info_jacobi['n_ops_fatoracao']} flops")
-        print(f"  Resolução Ly=c: {info_jacobi['n_ops_resolucao']} flops")
-        print(f"  Total         : {info_jacobi['n_ops_total']} flops")
+        print(f"  Por iteração : {info_jacobi['n_ops_por_iteracao']} flops")
+        print(f"  Total        : {info_jacobi['n_ops_total']} flops")
         print(f"\nVetor global u [m]:\n{u_jacobi}\n")
 
+    # Prints Gauss-Seidel
+    print("=" * 55)
+    print("4. MÉTODO: GAUSS-SEIDEL")
+    print("=" * 55)
+    if u_free_gs is None:
+        print("Divergiu")
+    else:
+        u_gs = np.zeros(n_gdl)
+        for a in range(len(gdl_livres)):
+            u_gs[gdl_livres[a]] = u_free_gs[a]
+        print(f"u_free (Gauss-Seidel): {[round(v, 8) for v in u_free_gs]}")
+        print(f"\nErro final Gauss-Seidel: {info_gs['erro_final']:.2e}")
+        print(f"Número de iterações: {info_gs['iteracoes']}")
+        print(f"\nDeslocamento máximo |u|: {max(abs(v) for v in u_free_gs):.6e} m")
+        print(f"\nOperações estimadas:")
+        print(f"  Por iteração : {info_gs['n_ops_por_iteracao']} flops")
+        print(f"  Total        : {info_gs['n_ops_total']} flops")
+        print(f"\nVetor global u [m]:\n{u_gs}\n")
 
 
     # ============================================
