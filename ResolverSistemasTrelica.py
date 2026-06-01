@@ -61,7 +61,7 @@ def subs_progressiva(L, b):
     return y
 
 
-print(f"Força aplicada em todos os métodos: F = {F} N\n")
+print(f"Forca aplicada em todos os metodos: F = {F} N\n")
 
 
 # ============================================
@@ -82,7 +82,7 @@ def elimGauss(A, b):
             A[k], A[linha_pivo] = A[linha_pivo], A[k]
             b[k], b[linha_pivo] = b[linha_pivo], b[k]
         if A[k][k] == 0:
-            print("Matriz singular, não pode realizar a eliminação")
+            print("Matriz singular, nao pode realizar a eliminacao")
             return None
         for i in range(k + 1, n):
             mik = A[i][k] / A[k][k]
@@ -358,12 +358,12 @@ for i in range(1, 101):
 
     # Prints Gauss
     print("=" * 55)
-    print("1. MÉTODO: ELIMINAÇÃO DE GAUSS")
+    print("1. METODO: ELIMINACAO DE GAUSS")
     print("=" * 55)
     print(f"u_free (Gauss) : {[round(v, 8) for v in u_free_gauss]}")
-    print(f"\nDeslocamento máximo |u|: {max(abs(v) for v in u_free_gauss):.6e} m")
-    print(f"\nOperações estimadas:")
-    print(f"  Eliminação   : {info_gauss['n_ops_eliminacao']} flops")
+    print(f"\nDeslocamento maximo |u|: {max(abs(v) for v in u_free_gauss):.6e} m")
+    print(f"\nOperacoes estimadas:")
+    print(f"  Eliminacao   : {info_gauss['n_ops_eliminacao']} flops")
     print(f"  RetroSubst   : {info_gauss['n_ops_retro']} flops")
     print(f"  Total        : {info_gauss['n_ops_total']} flops")
     print(f"\nVetor global u [m]:\n{u_gauss}\n")
@@ -374,19 +374,19 @@ for i in range(1, 101):
 
     # Prints LU
     print("=" * 55)
-    print("2. MÉTODO: FATORAÇÃO LU")
+    print("2. METODO: FATORACAO LU")
     print("=" * 55)
     print(f"u_free (LU)  : {[round(v, 8) for v in u_free_lu]}")
-    print(f"\nDeslocamento máximo |u|: {max(abs(v) for v in u_free_lu):.6e} m")
-    print(f"\nOperações estimadas:")
-    print(f"  Fatoração LU  : {info_lu['n_ops_fatoracao']} flops")
-    print(f"  Resolução Ly=c: {info_lu['n_ops_resolucao']} flops")
+    print(f"\nDeslocamento maximo |u|: {max(abs(v) for v in u_free_lu):.6e} m")
+    print(f"\nOperacoes estimadas:")
+    print(f"  Fatoracao LU  : {info_lu['n_ops_fatoracao']} flops")
+    print(f"  Resolucao Ly=c: {info_lu['n_ops_resolucao']} flops")
     print(f"  Total         : {info_lu['n_ops_total']} flops")
     print(f"\nVetor global u [m]:\n{u_lu}\n")
 
     # Prints Jacobi
     print("=" * 55)
-    print("3. MÉTODO: JACOBI")
+    print("3. METODO: JACOBI")
     print("=" * 55)
     if u_free_jacobi is None:
         print("Divergiu")
@@ -396,16 +396,16 @@ for i in range(1, 101):
             u_jacobi[gdl_livres[a]] = u_free_jacobi[a]
         print(f"u_free (Jacobi): {[round(v, 8) for v in u_free_jacobi]}")
         print(f"\nErro final Jacobi: {info_jacobi['erro_final']:.2e}")
-        print(f"Número de iterações: {info_jacobi['iteracoes']}")
-        print(f"\nDeslocamento máximo |u|: {max(abs(v) for v in u_free_jacobi):.6e} m")
-        print(f"\nOperações estimadas:")
-        print(f"  Por iteração : {info_jacobi['n_ops_por_iteracao']} flops")
+        print(f"Numero de iteracoes: {info_jacobi['iteracoes']}")
+        print(f"\nDeslocamento maximo |u|: {max(abs(v) for v in u_free_jacobi):.6e} m")
+        print(f"\nOperacoes estimadas:")
+        print(f"  Por iteracao : {info_jacobi['n_ops_por_iteracao']} flops")
         print(f"  Total        : {info_jacobi['n_ops_total']} flops")
         print(f"\nVetor global u [m]:\n{u_jacobi}\n")
 
     # Prints Gauss-Seidel
     print("=" * 55)
-    print("4. MÉTODO: GAUSS-SEIDEL")
+    print("4. METODO: GAUSS-SEIDEL")
     print("=" * 55)
     if u_free_gs is None:
         print("Divergiu")
@@ -415,10 +415,10 @@ for i in range(1, 101):
             u_gs[gdl_livres[a]] = u_free_gs[a]
         print(f"u_free (Gauss-Seidel): {[round(v, 8) for v in u_free_gs]}")
         print(f"\nErro final Gauss-Seidel: {info_gs['erro_final']:.2e}")
-        print(f"Número de iterações: {info_gs['iteracoes']}")
-        print(f"\nDeslocamento máximo |u|: {max(abs(v) for v in u_free_gs):.6e} m")
-        print(f"\nOperações estimadas:")
-        print(f"  Por iteração : {info_gs['n_ops_por_iteracao']} flops")
+        print(f"Numero de iteracoes: {info_gs['iteracoes']}")
+        print(f"\nDeslocamento maximo |u|: {max(abs(v) for v in u_free_gs):.6e} m")
+        print(f"\nOperacoes estimadas:")
+        print(f"  Por iteracao : {info_gs['n_ops_por_iteracao']} flops")
         print(f"  Total        : {info_gs['n_ops_total']} flops")
         print(f"\nVetor global u [m]:\n{u_gs}\n")
 
@@ -429,8 +429,8 @@ for i in range(1, 101):
     u_free_np = np.linalg.solve(K_free, f_atual)
 
     print("=" * 55)
-    print(">>> RESULTADOS IDEAIS (NUMPY) PARA COMPARAÇÃO <<<")
+    print(">>> RESULTADOS IDEAIS (NUMPY) PARA COMPARACAO <<<")
     print("=" * 55)
     print(f"u_free (NumPy) : {[round(v, 8) for v in u_free_np.tolist()]}")
-    print(f"Deslocamento máximo |u|: {max(abs(v) for v in u_free_np):.6e} m")
+    print(f"Deslocamento maximo |u|: {max(abs(v) for v in u_free_np):.6e} m")
     print("=" * 55)
