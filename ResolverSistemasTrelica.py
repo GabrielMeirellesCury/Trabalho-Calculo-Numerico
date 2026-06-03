@@ -327,6 +327,18 @@ def resolver_sistema_gauss_seidel(
     }
     return u_free, info
 
+def deslocamento_maximo_norma2(u):
+    u = np.asarray(u, dtype=float)
+    deslocamentos_nodais = []
+
+    for no in range(len(u) // 2):
+        ux = u[2 * no]
+        uy = u[2 * no + 1]
+        deslocamento_no = np.sqrt(ux**2 + uy**2)
+        deslocamentos_nodais.append(deslocamento_no)
+
+    return max(deslocamentos_nodais)
+
 
 # Execução Gauss-Seidel
 # u_free, info = resolver_sistema_gauss_seidel(K_free, f_free, tol=1e-10, maxIteracoes=10000)
@@ -375,7 +387,7 @@ for i in range(1, 101):
     print("1. METODO: ELIMINACAO DE GAUSS")
     print("=" * 55)
     print(f"u_free (Gauss) : {[round(v, 8) for v in u_free_gauss]}")
-    print(f"\nDeslocamento maximo |u|: {max(abs(v) for v in u_free_gauss):.6e} m")
+    print(f"\nDeslocamento maximo |u|: {deslocamento_maximo_norma2(u_gauss):.6e} m")
     print(f"\nOperacoes estimadas:")
     print(f"  Eliminacao   : {info_gauss['n_ops_eliminacao']} flops")
     print(f"  RetroSubst   : {info_gauss['n_ops_retro']} flops")
@@ -391,7 +403,7 @@ for i in range(1, 101):
     print("2. METODO: FATORACAO LU")
     print("=" * 55)
     print(f"u_free (LU)  : {[round(v, 8) for v in u_free_lu]}")
-    print(f"\nDeslocamento maximo |u|: {max(abs(v) for v in u_free_lu):.6e} m")
+    print(f"\nDeslocamento maximo |u|: {deslocamento_maximo_norma2(u_lu):.6e} m")
     print(f"\nOperacoes estimadas:")
     print(f"  Fatoracao LU  : {info_lu['n_ops_fatoracao']} flops")
     print(f"  Resolucao Ly=c: {info_lu['n_ops_resolucao']} flops")
@@ -411,7 +423,7 @@ for i in range(1, 101):
         print(f"u_free (Jacobi): {[round(v, 8) for v in u_free_jacobi]}")
         print(f"\nErro final Jacobi: {info_jacobi['erro_final']:.2e}")
         print(f"Numero de iteracoes: {info_jacobi['iteracoes']}")
-        print(f"\nDeslocamento maximo |u|: {max(abs(v) for v in u_free_jacobi):.6e} m")
+        print(f"\nDeslocamento maximo |u|: {deslocamento_maximo_norma2(u_jacobi):.6e} m")
         print(f"\nOperacoes estimadas:")
         print(f"  Por iteracao : {info_jacobi['n_ops_por_iteracao']} flops")
         print(f"  Total        : {info_jacobi['n_ops_total']} flops")
@@ -430,7 +442,7 @@ for i in range(1, 101):
         print(f"u_free (Gauss-Seidel): {[round(v, 8) for v in u_free_gs]}")
         print(f"\nErro final Gauss-Seidel: {info_gs['erro_final']:.2e}")
         print(f"Numero de iteracoes: {info_gs['iteracoes']}")
-        print(f"\nDeslocamento maximo |u|: {max(abs(v) for v in u_free_gs):.6e} m")
+        print(f"\nDeslocamento maximo |u|: {deslocamento_maximo_norma2(u_gs):.6e} m")
         print(f"\nOperacoes estimadas:")
         print(f"  Por iteracao : {info_gs['n_ops_por_iteracao']} flops")
         print(f"  Total        : {info_gs['n_ops_total']} flops")
@@ -441,11 +453,17 @@ for i in range(1, 101):
     # ============================================
     u_free_np = np.linalg.solve(K_free, f_atual)
 
+    # Reconstrução do vetor global u usando a solução do NumPy
+    u_np = np.zeros(n_gdl)
+
+    for a in range(len(gdl_livres)):
+        u_np[gdl_livres[a]] = u_free_np[a]
+
     print("=" * 55)
     print(">>> RESULTADOS IDEAIS (NUMPY) PARA COMPARACAO <<<")
     print("=" * 55)
     print(f"u_free (NumPy) : {[round(v, 8) for v in u_free_np.tolist()]}")
-    print(f"Deslocamento maximo |u|: {max(abs(v) for v in u_free_np):.6e} m")
+    print(f"Deslocamento maximo |u|: {deslocamento_maximo_norma2(u_np):.6e} m")
     print("=" * 55)
 
 
@@ -534,7 +552,7 @@ eixo_x_forcas = [1000 * beta for beta in lista_betas]
 # Calcula o deslocamento máximo (em módulo) para cada iteração
 eixo_y_deslocamentos = []
 for u_atual in lista_u_todos_betas:
-    max_disp = max(abs(v) for v in u_atual)
+    max_disp = deslocamento_maximo_norma2(u_atual)
     eixo_y_deslocamentos.append(max_disp)
 
 # 2. Criar e configurar o gráfico
