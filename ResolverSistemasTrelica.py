@@ -1,5 +1,8 @@
 import numpy as np
-
+import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
+from ProjetoTrelica import coordenadas, conectividade
 # #valores do "ProjetoTrelica" importados
 from ProjetoTrelica import K_free, f_free, gdl_livres, n_gdl, F
 
@@ -285,7 +288,9 @@ def gauss_seidel(A, b, x0=None, tol=1e-10, maxIteracoes=1000):
             soma = 0.0
             for j in range(n):
                 if j != i:
-                    soma += A[i][j] * x[j]   # usa x[j] já atualizado nesta iteração (j < i) ou do passo anterior (j > i)
+                    soma += (
+                        A[i][j] * x[j]
+                    )  # usa x[j] já atualizado nesta iteração (j < i) ou do passo anterior (j > i)
             x[i] = (b[i] - soma) / A[i][i]
         for valor in x:
             if np.isnan(valor) or np.isinf(valor):
@@ -300,7 +305,9 @@ def gauss_seidel(A, b, x0=None, tol=1e-10, maxIteracoes=1000):
     return x, maxIteracoes, erro
 
 
-def resolver_sistema_gauss_seidel(K_free, f_free, x0=None, tol=1e-10, maxIteracoes=1000):
+def resolver_sistema_gauss_seidel(
+    K_free, f_free, x0=None, tol=1e-10, maxIteracoes=1000
+):
     try:
         K = [list(map(float, linha)) for linha in K_free]
         f = list(map(float, f_free))
@@ -308,7 +315,9 @@ def resolver_sistema_gauss_seidel(K_free, f_free, x0=None, tol=1e-10, maxIteraco
         K = K_free
         f = f_free
     n = len(f)
-    u_free, iteracoes, erro = gauss_seidel(K, f, x0=x0, tol=tol, maxIteracoes=maxIteracoes)
+    u_free, iteracoes, erro = gauss_seidel(
+        K, f, x0=x0, tol=tol, maxIteracoes=maxIteracoes
+    )
     n_ops_por_iteracao = 2 * n**2
     info = {
         "iteracoes": iteracoes,
@@ -340,7 +349,8 @@ def resolver_sistema_gauss_seidel(K_free, f_free, x0=None, tol=1e-10, maxIteraco
 #     print(f"\nVetor global u [m]:\n{u}\n")
 
 
-#F = 1000*beta
+# F = 1000*beta
+lista_u_todos_betas = []
 for i in range(1, 101):
     print("=" * 55)
     print("Beta = " + str(i))
@@ -349,8 +359,12 @@ for i in range(1, 101):
 
     u_free_gauss, info_gauss = resolver_sistema_gauss(K_free, f_atual)
     u_free_lu, info_lu = resolver_sistema_LU(K_free, f_atual)
-    u_free_jacobi, info_jacobi = resolver_sistema_jacobi(K_free, f_atual, tol=1e-10, maxIteracoes=10000)
-    u_free_gs, info_gs = resolver_sistema_gauss_seidel(K_free, f_atual, tol=1e-10, maxIteracoes=10000)
+    u_free_jacobi, info_jacobi = resolver_sistema_jacobi(
+        K_free, f_atual, tol=1e-10, maxIteracoes=10000
+    )
+    u_free_gs, info_gs = resolver_sistema_gauss_seidel(
+        K_free, f_atual, tol=1e-10, maxIteracoes=10000
+    )
 
     u_gauss = np.zeros(n_gdl)
     for a in range(len(gdl_livres)):
@@ -371,7 +385,7 @@ for i in range(1, 101):
     u_lu = np.zeros(n_gdl)
     for a in range(len(gdl_livres)):
         u_lu[gdl_livres[a]] = u_free_lu[a]
-
+    lista_u_todos_betas.append(u_lu.copy())
     # Prints LU
     print("=" * 55)
     print("2. METODO: FATORACAO LU")
@@ -422,7 +436,6 @@ for i in range(1, 101):
         print(f"  Total        : {info_gs['n_ops_total']} flops")
         print(f"\nVetor global u [m]:\n{u_gs}\n")
 
-
     # ============================================
     # VERIFICAÇÃO FINAL COM NUMPY
     # ============================================
@@ -434,3 +447,111 @@ for i in range(1, 101):
     print(f"u_free (NumPy) : {[round(v, 8) for v in u_free_np.tolist()]}")
     print(f"Deslocamento maximo |u|: {max(abs(v) for v in u_free_np):.6e} m")
     print("=" * 55)
+
+
+def simulador_interativo(coordenadas, conectividade, lista_u, fator_escala=50):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    plt.subplots_adjust(bottom=0.25)  # Deixa espaço para o Slider
+
+    # 1. Desenha a treliça original (tracejada e fixa)
+    for barra in conectividade:
+        no_i, no_j = barra
+        ax.plot(
+            [coordenadas[no_i, 0], coordenadas[no_j, 0]],
+            [coordenadas[no_i, 1], coordenadas[no_j, 1]],
+            "--",
+            color="gray",
+            alpha=0.5,
+        )
+
+    # 2. Prepara as linhas da treliça deformada
+    linhas_deformadas = []
+    for barra in conectividade:
+        (linha,) = ax.plot(
+            [],
+            [],
+            "-",
+            color="blue",
+            linewidth=2,
+            marker="o",
+            markersize=5,
+            markerfacecolor="red",
+        )
+        linhas_deformadas.append((linha, barra))
+
+    # --- NOVO: Define os limites fixos dos eixos para evitar cortes ---
+    ax.set_xlim(-3, 3)  # Espaço horizontal com sobra
+    ax.set_ylim(-1.5, 3)  # Espaço vertical com espaço negativo extra para a deformação
+
+    ax.set_xlabel("Dimensão X [m]")
+    ax.set_ylabel("Dimensão Y [m]")
+    ax.grid(True, linestyle=":", alpha=0.6)
+
+    # 3. Cria o Slider
+    ax_beta = plt.axes([0.15, 0.1, 0.7, 0.03])
+    slider_beta = Slider(ax_beta, "Beta", 1, 100, valinit=1, valstep=1, color="blue")
+
+    # 4. Função de atualização
+    def update(val):
+        beta = int(slider_beta.val)
+        u_atual = lista_u[beta - 1]
+
+        ax.set_title(
+            f"Simulação Interativa - Beta = {beta} (Força F = {1000*beta} N)\nFator de Amplificação: {fator_escala}x",
+            fontweight="bold",
+        )
+
+        coords_def = coordenadas.copy()
+        for i in range(len(coords_def)):
+            coords_def[i, 0] += u_atual[2 * i] * fator_escala
+            coords_def[i, 1] += u_atual[2 * i + 1] * fator_escala
+
+        for linha, barra in linhas_deformadas:
+            no_i, no_j = barra
+            linha.set_data(
+                [coords_def[no_i, 0], coords_def[no_j, 0]],
+                [coords_def[no_i, 1], coords_def[no_j, 1]],
+            )
+        fig.canvas.draw_idle()
+
+    slider_beta.on_changed(update)
+    update(1)
+
+    plt.show()
+
+
+# Chamada (certifique-se de que lista_u_todos_betas está preenchida do passo anterior)
+print("\nAbrindo Simulação Interativa...")
+simulador_interativo(coordenadas, conectividade, lista_u_todos_betas, fator_escala=100)
+
+
+print("\nGerando gráfico de Força vs. Deslocamento Máximo...")
+
+# 1. Preparar os eixos X e Y
+lista_betas = list(range(1, 101))
+eixo_x_forcas = [1000 * beta for beta in lista_betas]
+
+# Calcula o deslocamento máximo (em módulo) para cada iteração
+eixo_y_deslocamentos = []
+for u_atual in lista_u_todos_betas:
+    max_disp = max(abs(v) for v in u_atual)
+    eixo_y_deslocamentos.append(max_disp)
+
+# 2. Criar e configurar o gráfico
+plt.figure(figsize=(9, 6))
+
+# Plota a linha com bolinhas em cada ponto
+plt.plot(eixo_x_forcas, eixo_y_deslocamentos, color='purple', linewidth=2, marker='.', markersize=6)
+
+# Estética para ficar bonito no relatório ABNT
+plt.title('Relação Linear: Força Aplicada vs. Deslocamento Máximo', fontsize=14, fontweight='bold')
+plt.xlabel('Força Aplicada F [N]', fontsize=12)
+plt.ylabel('Deslocamento Máximo |u| [m]', fontsize=12)
+plt.grid(True, linestyle='--', alpha=0.7)
+
+# Destacar a origem (0,0)
+plt.xlim(left=0)
+plt.ylim(bottom=0)
+
+plt.tight_layout()
+plt.show()
