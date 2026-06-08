@@ -392,8 +392,6 @@ def deslocamento_maximo_norma2(u):
 # K_free não muda entre os betas, apenas f escala.
 # Nas iterações do loop, só a resolução (2n² flops) é repetida.
 L_lu, U_lu, p_lu, n_ops_fat = fatorar_LU(K_free)
-print(f"[LU] Fatoracao PA=LU realizada uma vez: {n_ops_fat} flops (~2n^3/3, n=13)")
-print(f"[LU] Cada beta usara apenas a resolucao: {int(2*13**2)} flops (~2n^2)\n")
 
 lista_u_todos_betas = []
 for i in range(1, 101):
@@ -404,6 +402,10 @@ for i in range(1, 101):
 
     u_free_gauss, info_gauss = resolver_sistema_gauss(K_free, f_atual)
     u_free_lu, info_lu = resolver_LU_fatorado(L_lu, U_lu, p_lu, f_atual)
+    # beta 1: inclui o custo da fatoração (feita uma vez); demais betas: só resolução
+    if i == 1:
+        info_lu["n_ops_fatoracao"] = n_ops_fat
+        info_lu["n_ops_total"] = n_ops_fat + info_lu["n_ops_resolucao"]
     u_free_jacobi, info_jacobi = resolver_sistema_jacobi(
         K_free, f_atual, tol=1e-10, maxIteracoes=10000
     )
@@ -437,8 +439,11 @@ for i in range(1, 101):
     print("=" * 55)
     print(f"u_free (LU)  : {[round(v, 8) for v in u_free_lu]}")
     print(f"\nDeslocamento maximo |u|: {deslocamento_maximo_norma2(u_lu):.6e} m")
-    print(f"\nOperacoes neste beta (fatoracao reutilizada):")
-    print(f"  Fatoracao LU  : {info_lu['n_ops_fatoracao']} flops (ja feita antes do loop)")
+    print(f"\nOperacoes estimadas:")
+    if i == 1:
+        print(f"  Fatoracao LU  : {info_lu['n_ops_fatoracao']} flops (inclui fatoracao — feita 1x para todos os betas)")
+    else:
+        print(f"  Fatoracao LU  : {info_lu['n_ops_fatoracao']} flops (fatoracao reutilizada)")
     print(f"  Resolucao Ly=c: {info_lu['n_ops_resolucao']} flops")
     print(f"  Total         : {info_lu['n_ops_total']} flops")
     print(f"\nVetor global u [m]:\n{u_lu}\n")
