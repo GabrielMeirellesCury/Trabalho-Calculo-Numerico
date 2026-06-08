@@ -1,31 +1,39 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 from ProjetoTrelica import coordenadas, conectividade
-# #valores do "ProjetoTrelica" importados
+# valores do "ProjetoTrelica" importados
 from ProjetoTrelica import K_free, f_free, gdl_livres, n_gdl, F
 
-# print("Kfree")
-# print(K_free)
-# print("\nffree")
-# print(f_free)
-# print("\ngdl_livres")
-# print(gdl_livres)
-# print("\nn_gdl")
-# print(n_gdl)
+# ============================================================
+#   CONFIGURAÇÕES DAS SAIDAS!!!!
+# ============================================================
 
-# valores do "ProjetoTrelica"
-{
-    # n_nos = 8
-    # n_gdl = 16
-    # gdl_livres = np.array([0, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]) --> quais são os graus de liberdade livres
-    # # beta = 1  →  F = 1000 N  (varia de 1 a 100 no loop principal)
-    # F = 1000 (força --> varia de 1 a 100 no loop principal de acordo com "beta")
-    # K_free
-    # f_free = np.array([0, -F, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=float)
-}
+# METODOS
+RODAR_GAUSS        = True
+RODAR_LU           = True
+RODAR_JACOBI       = True
+RODAR_GAUSS_SEIDEL = True
 
+# RANGE QUE OS BETAS VAO PERCORRER
+BETA_MIN = 1
+BETA_MAX = 5
+
+# TOL E LIMITE DE ITERACOES
+TOL_ITERATIVOS   = 1e-10
+MAX_ITER         = 10000
+
+
+MODO_PRINT = "completo"
+# "resumido" → só deslocamento máximo de cada método
+# "completo"  → mostra u_free, operações, iterações etc.
+
+# Extras (grafico e simulador)
+MOSTRAR_SIMULADOR_INTERATIVO = True
+MOSTRAR_GRAFICO_FORCA_DESL   = True
+
+#Amplificacao visual na trelica deformada
+FATOR_ESCALA = 100
 
 # ============================================
 # FUNÇÕES AUXILIARES
@@ -64,7 +72,21 @@ def subs_progressiva(L, b):
     return y
 
 
-print(f"Forca aplicada em todos os metodos: F = {F} N\n")
+def deslocamento_maximo_norma2(u):
+    u = np.asarray(u, dtype=float)
+    deslocamentos_nodais = []
+    for no in range(len(u) // 2):
+        ux = u[2 * no]
+        uy = u[2 * no + 1]
+        deslocamentos_nodais.append(np.sqrt(ux**2 + uy**2))
+    return max(deslocamentos_nodais)
+
+
+def reconstruir_u_global(u_free, n_gdl, gdl_livres):
+    u = np.zeros(n_gdl)
+    for a in range(len(gdl_livres)):
+        u[gdl_livres[a]] = u_free[a]
+    return u
 
 
 # ============================================
@@ -108,25 +130,6 @@ def resolver_sistema_gauss(K_free, f_free):
     info = {"n_ops_eliminacao": int(2 * n**3 / 3), "n_ops_retro": int(n**2 / 2)}
     info["n_ops_total"] = info["n_ops_eliminacao"] + info["n_ops_retro"]
     return u_free, info
-
-
-# Execução Gauss
-# u_free, info = resolver_sistema_gauss(K_free, f_free)
-# u = np.zeros(n_gdl)
-# for a in range(len(gdl_livres)):
-#     u[gdl_livres[a]] = u_free[a]
-
-# # Prints Gauss
-# print("=" * 55)
-# print("1. MÉTODO: ELIMINAÇÃO DE GAUSS")
-# print("=" * 55)
-# print(f"u_free (Gauss) : {[round(v, 8) for v in u_free]}")
-# print(f"\nDeslocamento máximo |u|: {max(abs(v) for v in u_free):.6e} m")
-# print(f"\nOperações estimadas:")
-# print(f"  Eliminação   : {info['n_ops_eliminacao']} flops")
-# print(f"  RetroSubst   : {info['n_ops_retro']} flops")
-# print(f"  Total        : {info['n_ops_total']} flops")
-# print(f"\nVetor global u [m]:\n{u}\n")
 
 
 # ============================================
@@ -206,25 +209,6 @@ def resolver_LU_fatorado(L, U, p, f_free):
     return u_free, info
 
 
-# Execução LU
-# u_free, info = resolver_sistema_LU(K_free, f_free)
-# u = np.zeros(n_gdl)
-# for a in range(len(gdl_livres)):
-#     u[gdl_livres[a]] = u_free[a]
-
-# # Prints LU
-# print("=" * 55)
-# print("2. MÉTODO: FATORAÇÃO LU")
-# print("=" * 55)
-# print(f"u_free (LU)  : {[round(v, 8) for v in u_free]}")
-# print(f"\nDeslocamento máximo |u|: {max(abs(v) for v in u_free):.6e} m")
-# print(f"\nOperações estimadas:")
-# print(f"  Fatoração LU  : {info['n_ops_fatoracao']} flops")
-# print(f"  Resolução Ly=c: {info['n_ops_resolucao']} flops")
-# print(f"  Total         : {info['n_ops_total']} flops")
-# print(f"\nVetor global u [m]:\n{u}\n")
-
-
 # ============================================
 # 3. MÉTODO DE JACOBI
 # ============================================
@@ -275,30 +259,6 @@ def resolver_sistema_jacobi(K_free, f_free, x0=None, tol=1e-10, maxIteracoes=100
     return u_free, info
 
 
-# Execução Jacobi
-# u_free, info = resolver_sistema_jacobi(K_free, f_free, tol=1e-10, maxIteracoes=10000)
-# print("=" * 55)
-# print("3. MÉTODO: JACOBI")
-# print("=" * 55)
-# if u_free is None:
-#     print("Divergiu")
-
-
-# else:
-#     u = np.zeros(n_gdl)
-#     for a in range(len(gdl_livres)):
-#         u[gdl_livres[a]] = u_free[a]
-#     # Prints Jacobi
-#     print(f"u_free (Jacobi): {[round(v, 8) for v in u_free]}")
-#     print(f"\nErro final Jacobi: {info['erro_final']:.2e}")
-#     print(f"Número de iterações: {info['iteracoes']}")
-#     print(f"\nDeslocamento máximo |u|: {max(abs(v) for v in u_free):.6e} m")
-#     print(f"\nOperações estimadas:")
-#     print(f"  Por iteração : {info['n_ops_por_iteracao']} flops")
-#     print(f"  Total        : {info['n_ops_total']} flops")
-#     print(f"\nVetor global u [m]:\n{u}\n")
-
-
 # ============================================
 # 4. MÉTODO DE GAUSS-SEIDEL
 # ============================================
@@ -314,9 +274,7 @@ def gauss_seidel(A, b, x0=None, tol=1e-10, maxIteracoes=1000):
             soma = 0.0
             for j in range(n):
                 if j != i:
-                    soma += (
-                        A[i][j] * x[j]
-                    )  # usa x[j] já atualizado nesta iteração (j < i) ou do passo anterior (j > i)
+                    soma += A[i][j] * x[j]
             x[i] = (b[i] - soma) / A[i][i]
         for valor in x:
             if np.isnan(valor) or np.isinf(valor):
@@ -331,9 +289,7 @@ def gauss_seidel(A, b, x0=None, tol=1e-10, maxIteracoes=1000):
     return x, maxIteracoes, erro
 
 
-def resolver_sistema_gauss_seidel(
-    K_free, f_free, x0=None, tol=1e-10, maxIteracoes=1000
-):
+def resolver_sistema_gauss_seidel(K_free, f_free, x0=None, tol=1e-10, maxIteracoes=1000):
     try:
         K = [list(map(float, linha)) for linha in K_free]
         f = list(map(float, f_free))
@@ -341,9 +297,7 @@ def resolver_sistema_gauss_seidel(
         K = K_free
         f = f_free
     n = len(f)
-    u_free, iteracoes, erro = gauss_seidel(
-        K, f, x0=x0, tol=tol, maxIteracoes=maxIteracoes
-    )
+    u_free, iteracoes, erro = gauss_seidel(K, f, x0=x0, tol=tol, maxIteracoes=maxIteracoes)
     n_ops_por_iteracao = 2 * n**2
     info = {
         "iteracoes": iteracoes,
@@ -353,207 +307,111 @@ def resolver_sistema_gauss_seidel(
     }
     return u_free, info
 
-def deslocamento_maximo_norma2(u):
-    u = np.asarray(u, dtype=float)
-    deslocamentos_nodais = []
 
-    for no in range(len(u) // 2):
-        ux = u[2 * no]
-        uy = u[2 * no + 1]
-        deslocamento_no = np.sqrt(ux**2 + uy**2)
-        deslocamentos_nodais.append(deslocamento_no)
-
-    return max(deslocamentos_nodais)
+# ============================================
+# FUNÇÕES DE PRINT POR MÉTODO
+# ============================================
+def _header(numero, nome):
+    print(f"\n{'=' * 55}")
+    print(f"  {numero}. MÉTODO: {nome}")
+    print(f"{'=' * 55}")
 
 
-# Execução Gauss-Seidel
-# u_free, info = resolver_sistema_gauss_seidel(K_free, f_free, tol=1e-10, maxIteracoes=10000)
-# print("=" * 55)
-# print("4. MÉTODO: GAUSS-SEIDEL")
-# print("=" * 55)
-# if u_free is None:
-#     print("Divergiu")
-# else:
-#     u = np.zeros(n_gdl)
-#     for a in range(len(gdl_livres)):
-#         u[gdl_livres[a]] = u_free[a]
-#     print(f"u_free (Gauss-Seidel): {[round(v, 8) for v in u_free]}")
-#     print(f"\nErro final Gauss-Seidel: {info['erro_final']:.2e}")
-#     print(f"Número de iterações: {info['iteracoes']}")
-#     print(f"\nDeslocamento máximo |u|: {max(abs(v) for v in u_free):.6e} m")
-#     print(f"\nOperações estimadas:")
-#     print(f"  Por iteração : {info['n_ops_por_iteracao']} flops")
-#     print(f"  Total        : {info['n_ops_total']} flops")
-#     print(f"\nVetor global u [m]:\n{u}\n")
+def _print_gauss(beta, u_free, info, u_global, modo):
+    _header("1", "ELIMINAÇÃO DE GAUSS")
+    u_max = deslocamento_maximo_norma2(u_global)
+    print(f"  Deslocamento máximo |u| : {u_max:.6e} m")
+    if modo == "completo":
+        print(f"  u_free : {[round(v, 8) for v in u_free]}")
+        print(f"  Operações — Eliminação: {info['n_ops_eliminacao']}  |  RetroSubst: {info['n_ops_retro']}  |  Total: {info['n_ops_total']} flops")
+        print(f"  Vetor global u [m]:\n  {u_global}")
 
 
-# F = 1000*beta
-# --- Fatoração LU feita UMA VEZ aqui, fora do loop ---
-# K_free não muda entre os betas, apenas f escala.
-# Nas iterações do loop, só a resolução (2n² flops) é repetida.
-L_lu, U_lu, p_lu, n_ops_fat = fatorar_LU(K_free)
-
-lista_u_todos_betas = []
-for i in range(1, 101):
-    print("=" * 55)
-    print("Beta = " + str(i))
-    print("=" * 55)
-    f_atual = f_free * i
-
-    u_free_gauss, info_gauss = resolver_sistema_gauss(K_free, f_atual)
-    u_free_lu, info_lu = resolver_LU_fatorado(L_lu, U_lu, p_lu, f_atual)
-    # beta 1: inclui o custo da fatoração (feita uma vez); demais betas: só resolução
-    if i == 1:
-        info_lu["n_ops_fatoracao"] = n_ops_fat
-        info_lu["n_ops_total"] = n_ops_fat + info_lu["n_ops_resolucao"]
-    u_free_jacobi, info_jacobi = resolver_sistema_jacobi(
-        K_free, f_atual, tol=1e-10, maxIteracoes=10000
-    )
-    u_free_gs, info_gs = resolver_sistema_gauss_seidel(
-        K_free, f_atual, tol=1e-10, maxIteracoes=10000
-    )
-
-    u_gauss = np.zeros(n_gdl)
-    for a in range(len(gdl_livres)):
-        u_gauss[gdl_livres[a]] = u_free_gauss[a]
-
-    # Prints Gauss
-    print("=" * 55)
-    print("1. METODO: ELIMINACAO DE GAUSS")
-    print("=" * 55)
-    print(f"u_free (Gauss) : {[round(v, 8) for v in u_free_gauss]}")
-    print(f"\nDeslocamento maximo |u|: {deslocamento_maximo_norma2(u_gauss):.6e} m")
-    print(f"\nOperacoes estimadas:")
-    print(f"  Eliminacao   : {info_gauss['n_ops_eliminacao']} flops")
-    print(f"  RetroSubst   : {info_gauss['n_ops_retro']} flops")
-    print(f"  Total        : {info_gauss['n_ops_total']} flops")
-    print(f"\nVetor global u [m]:\n{u_gauss}\n")
-
-    u_lu = np.zeros(n_gdl)
-    for a in range(len(gdl_livres)):
-        u_lu[gdl_livres[a]] = u_free_lu[a]
-    lista_u_todos_betas.append(u_lu.copy())
-    # Prints LU
-    print("=" * 55)
-    print("2. METODO: FATORACAO LU")
-    print("=" * 55)
-    print(f"u_free (LU)  : {[round(v, 8) for v in u_free_lu]}")
-    print(f"\nDeslocamento maximo |u|: {deslocamento_maximo_norma2(u_lu):.6e} m")
-    print(f"\nOperacoes estimadas:")
-    if i == 1:
-        print(f"  Fatoracao LU  : {info_lu['n_ops_fatoracao']} flops (inclui fatoracao — feita 1x para todos os betas)")
-    else:
-        print(f"  Fatoracao LU  : {info_lu['n_ops_fatoracao']} flops (fatoracao reutilizada)")
-    print(f"  Resolucao Ly=c: {info_lu['n_ops_resolucao']} flops")
-    print(f"  Total         : {info_lu['n_ops_total']} flops")
-    print(f"\nVetor global u [m]:\n{u_lu}\n")
-
-    # Prints Jacobi
-    print("=" * 55)
-    print("3. METODO: JACOBI")
-    print("=" * 55)
-    if u_free_jacobi is None:
-        print("Divergiu")
-    else:
-        u_jacobi = np.zeros(n_gdl)
-        for a in range(len(gdl_livres)):
-            u_jacobi[gdl_livres[a]] = u_free_jacobi[a]
-        print(f"u_free (Jacobi): {[round(v, 8) for v in u_free_jacobi]}")
-        print(f"\nErro final Jacobi: {info_jacobi['erro_final']:.2e}")
-        print(f"Numero de iteracoes: {info_jacobi['iteracoes']}")
-        print(f"\nDeslocamento maximo |u|: {deslocamento_maximo_norma2(u_jacobi):.6e} m")
-        print(f"\nOperacoes estimadas:")
-        print(f"  Por iteracao : {info_jacobi['n_ops_por_iteracao']} flops")
-        print(f"  Total        : {info_jacobi['n_ops_total']} flops")
-        print(f"\nVetor global u [m]:\n{u_jacobi}\n")
-
-    # Prints Gauss-Seidel
-    print("=" * 55)
-    print("4. METODO: GAUSS-SEIDEL")
-    print("=" * 55)
-    if u_free_gs is None:
-        print("Divergiu")
-    else:
-        u_gs = np.zeros(n_gdl)
-        for a in range(len(gdl_livres)):
-            u_gs[gdl_livres[a]] = u_free_gs[a]
-        print(f"u_free (Gauss-Seidel): {[round(v, 8) for v in u_free_gs]}")
-        print(f"\nErro final Gauss-Seidel: {info_gs['erro_final']:.2e}")
-        print(f"Numero de iteracoes: {info_gs['iteracoes']}")
-        print(f"\nDeslocamento maximo |u|: {deslocamento_maximo_norma2(u_gs):.6e} m")
-        print(f"\nOperacoes estimadas:")
-        print(f"  Por iteracao : {info_gs['n_ops_por_iteracao']} flops")
-        print(f"  Total        : {info_gs['n_ops_total']} flops")
-        print(f"\nVetor global u [m]:\n{u_gs}\n")
-
-    # ============================================
-    # VERIFICAÇÃO FINAL COM NUMPY
-    # ============================================
-    u_free_np = np.linalg.solve(K_free, f_atual)
-
-    # Reconstrução do vetor global u usando a solução do NumPy
-    u_np = np.zeros(n_gdl)
-
-    for a in range(len(gdl_livres)):
-        u_np[gdl_livres[a]] = u_free_np[a]
-
-    print("=" * 55)
-    print(">>> RESULTADOS IDEAIS (NUMPY) PARA COMPARACAO <<<")
-    print("=" * 55)
-    print(f"u_free (NumPy) : {[round(v, 8) for v in u_free_np.tolist()]}")
-    print(f"Deslocamento maximo |u|: {deslocamento_maximo_norma2(u_np):.6e} m")
-    print("=" * 55)
+def _print_lu(beta, u_free, info, u_global, modo, e_primeiro_beta):
+    _header("2", "FATORAÇÃO LU")
+    u_max = deslocamento_maximo_norma2(u_global)
+    print(f"  Deslocamento máximo |u| : {u_max:.6e} m")
+    if modo == "completo":
+        print(f"  u_free : {[round(v, 8) for v in u_free]}")
+        fat_label = f"{info['n_ops_fatoracao']} flops (feita 1x)" if e_primeiro_beta else "reutilizada"
+        print(f"  Fatoração LU: {fat_label}  |  Resolução: {info['n_ops_resolucao']} flops  |  Total: {info['n_ops_total']} flops")
+        print(f"  Vetor global u [m]:\n  {u_global}")
 
 
+def _print_jacobi(beta, u_free, info, u_global, modo):
+    _header("3", "JACOBI")
+    if u_free is None:
+        print("  ⚠  DIVERGIU")
+        return
+    u_max = deslocamento_maximo_norma2(u_global)
+    print(f"  Deslocamento máximo |u| : {u_max:.6e} m")
+    print(f"  Iterações: {info['iteracoes']}   |   Erro final: {info['erro_final']:.2e}")
+    if modo == "completo":
+        print(f"  u_free : {[round(v, 8) for v in u_free]}")
+        print(f"  Operações — Por iteração: {info['n_ops_por_iteracao']}  |  Total: {info['n_ops_total']} flops")
+        print(f"  Vetor global u [m]:\n  {u_global}")
+
+
+def _print_gs(beta, u_free, info, u_global, modo):
+    _header("4", "GAUSS-SEIDEL")
+    if u_free is None:
+        print("  ⚠  DIVERGIU")
+        return
+    u_max = deslocamento_maximo_norma2(u_global)
+    print(f"  Deslocamento máximo |u| : {u_max:.6e} m")
+    print(f"  Iterações: {info['iteracoes']}   |   Erro final: {info['erro_final']:.2e}")
+    if modo == "completo":
+        print(f"  u_free : {[round(v, 8) for v in u_free]}")
+        print(f"  Operações — Por iteração: {info['n_ops_por_iteracao']}  |  Total: {info['n_ops_total']} flops")
+        print(f"  Vetor global u [m]:\n  {u_global}")
+
+
+# ============================================
+# SIMULADOR INTERATIVO (sem alteração)
+# ============================================
 def simulador_interativo(coordenadas, conectividade, lista_u, fator_escala=50):
     fig, ax = plt.subplots(figsize=(10, 6))
-    plt.subplots_adjust(bottom=0.25)  # Deixa espaço para o Slider
+    plt.subplots_adjust(bottom=0.25)
 
-    # 1. Desenha a treliça original (tracejada e fixa)
     for barra in conectividade:
         no_i, no_j = barra
         ax.plot(
             [coordenadas[no_i, 0], coordenadas[no_j, 0]],
             [coordenadas[no_i, 1], coordenadas[no_j, 1]],
-            "--",
-            color="gray",
-            alpha=0.5,
+            "--", color="gray", alpha=0.5,
         )
 
-    # 2. Prepara as linhas da treliça deformada
     linhas_deformadas = []
     for barra in conectividade:
         (linha,) = ax.plot(
-            [],
-            [],
-            "-",
-            color="blue",
-            linewidth=2,
-            marker="o",
-            markersize=5,
-            markerfacecolor="red",
+            [], [], "-", color="blue", linewidth=2,
+            marker="o", markersize=5, markerfacecolor="red",
         )
         linhas_deformadas.append((linha, barra))
 
-    # --- NOVO: Define os limites fixos dos eixos para evitar cortes ---
-    ax.set_xlim(-3, 3)  # Espaço horizontal com sobra
-    ax.set_ylim(-1.5, 3)  # Espaço vertical com espaço negativo extra para a deformação
-
+    ax.set_xlim(-3, 3)
+    ax.set_ylim(-1.5, 3)
     ax.set_xlabel("Dimensão X [m]")
     ax.set_ylabel("Dimensão Y [m]")
     ax.grid(True, linestyle=":", alpha=0.6)
 
-    # 3. Cria o Slider
-    ax_beta = plt.axes([0.15, 0.1, 0.7, 0.03])
-    slider_beta = Slider(ax_beta, "Beta", 1, 100, valinit=1, valstep=1, color="blue")
+    beta_min_slider = BETA_MIN
+    beta_max_slider = BETA_MIN + len(lista_u) - 1
 
-    # 4. Função de atualização
+    ax_beta = plt.axes([0.15, 0.1, 0.7, 0.03])
+    slider_beta = Slider(
+        ax_beta, "Beta", beta_min_slider, beta_max_slider,
+        valinit=beta_min_slider, valstep=1, color="blue"
+    )
+
     def update(val):
         beta = int(slider_beta.val)
-        u_atual = lista_u[beta - 1]
+        idx = beta - BETA_MIN
+        u_atual = lista_u[idx]
 
         ax.set_title(
-            f"Simulação Interativa - Beta = {beta} (Força F = {1000*beta} N)\nFator de Amplificação: {fator_escala}x",
+            f"Simulação Interativa — Beta = {beta}  (F = {1000*beta} N)\n"
+            f"Fator de Amplificação: {fator_escala}x",
             fontweight="bold",
         )
 
@@ -571,43 +429,98 @@ def simulador_interativo(coordenadas, conectividade, lista_u, fator_escala=50):
         fig.canvas.draw_idle()
 
     slider_beta.on_changed(update)
-    update(1)
-
+    update(beta_min_slider)
     plt.show()
 
 
-# Chamada (certifique-se de que lista_u_todos_betas está preenchida do passo anterior)
-print("\nAbrindo Simulação Interativa...")
-simulador_interativo(coordenadas, conectividade, lista_u_todos_betas, fator_escala=100)
+# ============================================
+# LOOP PRINCIPAL
+# ============================================
+print("=" * 55)
+print("  RESOLUÇÃO DA TRELIÇA — LOOP PRINCIPAL")
+print(f"  Betas: {BETA_MIN} → {BETA_MAX}  |  Modo: {MODO_PRINT.upper()}")
+metodos_ativos = [
+    nome for flag, nome in [
+        (RODAR_GAUSS,        "Gauss"),
+        (RODAR_LU,           "LU"),
+        (RODAR_JACOBI,       "Jacobi"),
+        (RODAR_GAUSS_SEIDEL, "Gauss-Seidel"),
+    ] if flag
+]
+print(f"  Métodos ativos: {', '.join(metodos_ativos)}")
+if RODAR_JACOBI or RODAR_GAUSS_SEIDEL:
+    print(f"  Tolerância iterativos: {TOL_ITERATIVOS:.0e}  |  Max iter: {MAX_ITER}")
+print("=" * 55)
+
+# Fatoração LU feita UMA vez (K não muda entre betas)
+if RODAR_LU:
+    L_lu, U_lu, p_lu, n_ops_fat = fatorar_LU(K_free)
+
+lista_u_todos_betas = []   # guarda u_global (LU ou Gauss, o que estiver ativo) para os gráficos
+
+for beta in range(BETA_MIN, BETA_MAX + 1):
+    f_atual = f_free * beta
+
+    print(f"\n{'━' * 55}")
+    print(f"  β = {beta}   →   F = {1000 * beta} N")
+    print(f"{'━' * 55}")
+
+    # --- Gauss ---
+    if RODAR_GAUSS:
+        u_free_gauss, info_gauss = resolver_sistema_gauss(K_free, f_atual)
+        u_gauss = reconstruir_u_global(u_free_gauss, n_gdl, gdl_livres)
+        _print_gauss(beta, u_free_gauss, info_gauss, u_gauss, MODO_PRINT)
+
+    # --- LU ---
+    if RODAR_LU:
+        u_free_lu, info_lu = resolver_LU_fatorado(L_lu, U_lu, p_lu, f_atual)
+        e_primeiro = (beta == BETA_MIN)
+        if e_primeiro:
+            info_lu["n_ops_fatoracao"] = n_ops_fat
+            info_lu["n_ops_total"] = n_ops_fat + info_lu["n_ops_resolucao"]
+        u_lu = reconstruir_u_global(u_free_lu, n_gdl, gdl_livres)
+        _print_lu(beta, u_free_lu, info_lu, u_lu, MODO_PRINT, e_primeiro)
+        lista_u_todos_betas.append(u_lu.copy())   # LU é referência para os gráficos
+    elif RODAR_GAUSS:
+        lista_u_todos_betas.append(u_gauss.copy())
+
+    # --- Jacobi ---
+    if RODAR_JACOBI:
+        u_free_jac, info_jac = resolver_sistema_jacobi(
+            K_free, f_atual, tol=TOL_ITERATIVOS, maxIteracoes=MAX_ITER
+        )
+        u_jac = reconstruir_u_global(u_free_jac if u_free_jac else [0]*len(gdl_livres), n_gdl, gdl_livres)
+        _print_jacobi(beta, u_free_jac, info_jac, u_jac, MODO_PRINT)
+
+    # --- Gauss-Seidel ---
+    if RODAR_GAUSS_SEIDEL:
+        u_free_gs, info_gs = resolver_sistema_gauss_seidel(
+            K_free, f_atual, tol=TOL_ITERATIVOS, maxIteracoes=MAX_ITER
+        )
+        u_gs = reconstruir_u_global(u_free_gs if u_free_gs else [0]*len(gdl_livres), n_gdl, gdl_livres)
+        _print_gs(beta, u_free_gs, info_gs, u_gs, MODO_PRINT)
 
 
-print("\nGerando gráfico de Força vs. Deslocamento Máximo...")
+# ============================================
+# GRÁFICOS
+# ============================================
+if lista_u_todos_betas and MOSTRAR_SIMULADOR_INTERATIVO:
+    print("\nAbrindo Simulação Interativa...")
+    simulador_interativo(coordenadas, conectividade, lista_u_todos_betas, fator_escala=FATOR_ESCALA)
 
-# 1. Preparar os eixos X e Y
-lista_betas = list(range(1, 101))
-eixo_x_forcas = [1000 * beta for beta in lista_betas]
+if lista_u_todos_betas and MOSTRAR_GRAFICO_FORCA_DESL:
+    print("\nGerando gráfico Força vs. Deslocamento Máximo...")
+    lista_betas   = list(range(BETA_MIN, BETA_MAX + 1))
+    eixo_x_forcas = [1000 * b for b in lista_betas]
+    eixo_y_deslocamentos = [deslocamento_maximo_norma2(u) for u in lista_u_todos_betas]
 
-# Calcula o deslocamento máximo (em módulo) para cada iteração
-eixo_y_deslocamentos = []
-for u_atual in lista_u_todos_betas:
-    max_disp = deslocamento_maximo_norma2(u_atual)
-    eixo_y_deslocamentos.append(max_disp)
-
-# 2. Criar e configurar o gráfico
-plt.figure(figsize=(9, 6))
-
-# Plota a linha com bolinhas em cada ponto
-plt.plot(eixo_x_forcas, eixo_y_deslocamentos, color='purple', linewidth=2, marker='.', markersize=6)
-
-# Estética para ficar bonito no relatório ABNT
-plt.title('Relação Linear: Força Aplicada vs. Deslocamento Máximo', fontsize=14, fontweight='bold')
-plt.xlabel('Força Aplicada F [N]', fontsize=12)
-plt.ylabel('Deslocamento Máximo |u| [m]', fontsize=12)
-plt.grid(True, linestyle='--', alpha=0.7)
-
-# Destacar a origem (0,0)
-plt.xlim(left=0)
-plt.ylim(bottom=0)
-
-plt.tight_layout()
-plt.show()
+    plt.figure(figsize=(9, 6))
+    plt.plot(eixo_x_forcas, eixo_y_deslocamentos, color="purple", linewidth=2, marker=".", markersize=6)
+    plt.title("Relação Linear: Força Aplicada vs. Deslocamento Máximo", fontsize=14, fontweight="bold")
+    plt.xlabel("Força Aplicada F [N]", fontsize=12)
+    plt.ylabel("Deslocamento Máximo |u| [m]", fontsize=12)
+    plt.grid(True, linestyle="--", alpha=0.7)
+    plt.xlim(left=0)
+    plt.ylim(bottom=0)
+    plt.tight_layout()
+    plt.show()
