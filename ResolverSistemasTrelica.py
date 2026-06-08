@@ -180,6 +180,32 @@ def resolver_sistema_LU(K_free, f_free):
     return u_free, info
 
 
+def fatorar_LU(K_free):
+    """Faz apenas a fatoração PA=LU. Chamar UMA vez antes do loop de betas."""
+    try:
+        K = [list(map(float, linha)) for linha in K_free]
+    except Exception:
+        K = K_free
+    n = len(K)
+    L, U, p = decomposicao_LU_pivotamento_parcial(K)
+    n_ops_fatoracao = int(2 * n**3 / 3)
+    return L, U, p, n_ops_fatoracao
+
+
+def resolver_LU_fatorado(L, U, p, f_free):
+    """Usa L, U, p já calculados para resolver com um novo vetor f. Custo: apenas 2n²."""
+    try:
+        f = list(map(float, f_free))
+    except Exception:
+        f = f_free
+    n = len(f)
+    u_free = solve_LU(L, U, p, f)
+    n_ops_resolucao = int(2 * n**2)
+    info = {"n_ops_fatoracao": 0, "n_ops_resolucao": n_ops_resolucao}
+    info["n_ops_total"] = n_ops_resolucao
+    return u_free, info
+
+
 # Execução LU
 # u_free, info = resolver_sistema_LU(K_free, f_free)
 # u = np.zeros(n_gdl)
@@ -362,6 +388,13 @@ def deslocamento_maximo_norma2(u):
 
 
 # F = 1000*beta
+# --- Fatoração LU feita UMA VEZ aqui, fora do loop ---
+# K_free não muda entre os betas, apenas f escala.
+# Nas iterações do loop, só a resolução (2n² flops) é repetida.
+L_lu, U_lu, p_lu, n_ops_fat = fatorar_LU(K_free)
+print(f"[LU] Fatoracao PA=LU realizada uma vez: {n_ops_fat} flops (~2n^3/3, n=13)")
+print(f"[LU] Cada beta usara apenas a resolucao: {int(2*13**2)} flops (~2n^2)\n")
+
 lista_u_todos_betas = []
 for i in range(1, 101):
     print("=" * 55)
@@ -370,7 +403,7 @@ for i in range(1, 101):
     f_atual = f_free * i
 
     u_free_gauss, info_gauss = resolver_sistema_gauss(K_free, f_atual)
-    u_free_lu, info_lu = resolver_sistema_LU(K_free, f_atual)
+    u_free_lu, info_lu = resolver_LU_fatorado(L_lu, U_lu, p_lu, f_atual)
     u_free_jacobi, info_jacobi = resolver_sistema_jacobi(
         K_free, f_atual, tol=1e-10, maxIteracoes=10000
     )
@@ -404,8 +437,8 @@ for i in range(1, 101):
     print("=" * 55)
     print(f"u_free (LU)  : {[round(v, 8) for v in u_free_lu]}")
     print(f"\nDeslocamento maximo |u|: {deslocamento_maximo_norma2(u_lu):.6e} m")
-    print(f"\nOperacoes estimadas:")
-    print(f"  Fatoracao LU  : {info_lu['n_ops_fatoracao']} flops")
+    print(f"\nOperacoes neste beta (fatoracao reutilizada):")
+    print(f"  Fatoracao LU  : {info_lu['n_ops_fatoracao']} flops (ja feita antes do loop)")
     print(f"  Resolucao Ly=c: {info_lu['n_ops_resolucao']} flops")
     print(f"  Total         : {info_lu['n_ops_total']} flops")
     print(f"\nVetor global u [m]:\n{u_lu}\n")
