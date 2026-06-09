@@ -1,21 +1,17 @@
 import numpy as np
 
-# ============================================================
-# DADOS DO PROBLEMA
-# ============================================================
-
+# dados
 E = 200e9          # Módulo de Young [Pa]
 A = 1e-4           # Área da seção transversal [m²]
 F = 1000           # Força aplicada [N], por exemplo beta = 1
 
 n_nos = 8
-n_gdl = 2 * n_nos  # Cada nó possui 2 graus de liberdade: x e y
+n_gdl = 2 * n_nos  # Cada nó possui 2 graus de liberdade (x e y)
 
-# Coordenadas dos nós
-# nó 0: central
-# nó 1: apoio esquerdo
-# nó 7: apoio direito
-
+# coordenadas dos nós
+    # nó 0: central
+    # nó 1: esquerda
+    # nó 7: direita
 coordenadas = np.array([
     [0, 0],
     [-2, 0],
@@ -27,9 +23,8 @@ coordenadas = np.array([
     [2, 0]
 ], dtype=float)
 
-# Conectividade das barras
-# Cada linha representa uma barra: [nó inicial, nó final]
-
+# conectividade das barras
+    # cada linha é uma barra, da seguinte forma: [nó inicial, nó final]
 conectividade = np.array([
     [0, 1],
     [0, 2],
@@ -47,43 +42,39 @@ conectividade = np.array([
 ], dtype=int)
 
 
-# ============================================================
-# PASSO 1: INICIALIZAR MATRIZ GLOBAL K
-# ============================================================
-
+# inicializando a matriz global K (K_global)
 K = np.zeros((n_gdl, n_gdl))
 
-
-# ============================================================
-# PASSO 2: MONTAR A MATRIZ GLOBAL K POR ASSEMBLY
-# ============================================================
+# =======================================================
+# 1: montando a matriz K_global --> assemnly
+# ========================================================
 
 for e in range(len(conectividade)):
 
-    # Nós inicial e final da barra e
+    # nó inicial e nó final da barra "e"
     i = conectividade[e, 0]
     j = conectividade[e, 1]
 
-    # Coordenadas do nó i
+    # coords. do nó "i"
     xi = coordenadas[i, 0]
     yi = coordenadas[i, 1]
 
-    # Coordenadas do nó j
+    # coords. do nó "j"
     xj = coordenadas[j, 0]
     yj = coordenadas[j, 1]
 
-    # Diferenças de coordenadas
+    # diferenças das coords.
     dx = xj - xi
     dy = yj - yi
 
-    # Comprimento da barra
+    # comprimento da barra "e"
     h = np.sqrt(dx**2 + dy**2)
 
-    # Cossenos diretores
+    # cossenos diretores
     lx = dx / h
     ly = dy / h
 
-    # Matriz de rigidez local da barra
+    # k_local da barra "e"
     k_local = (E * A / h) * np.array([
         [ lx**2,     lx*ly,    -lx**2,    -lx*ly ],
         [ lx*ly,     ly**2,    -lx*ly,    -ly**2 ],
@@ -91,7 +82,7 @@ for e in range(len(conectividade)):
         [ -lx*ly,   -ly**2,     lx*ly,     ly**2 ]
     ])
 
-    # Graus de liberdade globais associados aos nós i e j
+    # graus de liberdade associados aos nós "i" e "j"
     gdl = np.array([
         2*i,
         2*i + 1,
@@ -99,7 +90,7 @@ for e in range(len(conectividade)):
         2*j + 1
     ])
 
-    # Assembly: soma da matriz local na matriz global
+    # assembly
     for a in range(4):
         for b in range(4):
             linha_global = gdl[a]
@@ -108,36 +99,27 @@ for e in range(len(conectividade)):
             K[linha_global, coluna_global] += k_local[a, b]
 
 
-# ============================================================
-# PASSO 3: MONTAR O VETOR GLOBAL DE FORÇAS
-# ============================================================
+# ========================================================
+# 2: montando o vetor global de forças f (f_global)
+# ========================================================
 
 f = np.zeros(n_gdl)
-
-# Força vertical para baixo aplicada no nó central, nó 0
-# GDL vertical do nó 0: 2*0 + 1 = 1
-
 f[1] = -F
 
 
-# ============================================================
-# PASSO 4: DEFINIR GRAUS DE LIBERDADE RESTRINGIDOS
-# ============================================================
+# =========================================================
+# 3: definindo quais são os graus de liberdade restringidos
+# =========================================================
 
-# Nó 1: apoio esquerdo, restringe x e y
-# u[2] = u_1x = 0
-# u[3] = u_1y = 0
-
-# Nó 7: apoio direito, restringe y
-# u[15] = u_7y = 0
-
+# graus de liberdade restringidos: 2, 3 e 15
 gdl_restringidos = np.array([2, 3, 15])
 
 
-# ============================================================
-# PASSO 5: DEFINIR GRAUS DE LIBERDADE LIVRES
-# ============================================================
+# =========================================================
+# 4: definindo quais são os graus de liberdade livres
+# =========================================================
 
+# se os graus de liberdade restringidos são "2, 3 e 15", os livres são o resto
 todos_gdl = np.arange(n_gdl)
 
 gdl_livres = np.array([
@@ -146,35 +128,32 @@ gdl_livres = np.array([
 ])
 
 
-# ============================================================
-# PASSO 6: CONSTRUIR O SISTEMA REDUZIDO
-# ============================================================
+# =========================================================
+# 5: construindo o sistema reduzido (K_free u_free = f_free)
+# =========================================================
 
 K_free = K[np.ix_(gdl_livres, gdl_livres)]
 f_free = f[gdl_livres]
 
 
-# ============================================================
-# PASSO 7: DEFINIR O VETOR DE INCÓGNITAS DO SISTEMA REDUZIDO
-# ============================================================
+# =========================================================
+# 6: definindo o vetor de deslocamentos livres (u_free)
+# =========================================================
 
-# Aqui não estamos resolvendo o sistema.
-# Apenas representamos quais deslocamentos aparecem em u_free.
-
+# aqui, apenas mostramos quais deslocamentos aparecem em u_free
 u_free_indices = gdl_livres.copy()
 
-# Ou seja:
-# u_free[0]  corresponde a u[0]
-# u_free[1]  corresponde a u[1]
-# u_free[2]  corresponde a u[4]
-# ...
-# u_free[12] corresponde a u[14]
+# isso significa que:
+    # u_free[0] corresponde a u[0]
+    # u_free[1] corresponde a u[1]
+    # u_free[2] corresponde a u[4]
+    # ...
+    # u_free[12] corresponde a u[14]
 
 
-# ============================================================
-# PASSO 8: APRESENTAR O SISTEMA REDUZIDO
-# ============================================================
-
+# =========================================================
+# 7: mostrando o sistema reduzido (K_free u_free = f_free) e as outras infos.
+# =========================================================
 
 if __name__ == "__main__":
     print("Matriz global K:")
@@ -198,5 +177,5 @@ if __name__ == "__main__":
     print("\nÍndices globais associados ao vetor u_free:")
     print(u_free_indices)
 
-    print("\nSistema reduzido montado:")
+    print("\nSistema reduzido:")
     print("K_free @ u_free = f_free")
