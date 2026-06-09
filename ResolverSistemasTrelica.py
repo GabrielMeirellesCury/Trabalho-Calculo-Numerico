@@ -341,7 +341,7 @@ def _print_lu(beta, u_free, info, u_global, modo, e_primeiro_beta):
 def _print_jacobi(beta, u_free, info, u_global, modo):
     _header("3", "JACOBI")
     if u_free is None:
-        print("DIVERGIU")
+        print("  ⚠  DIVERGIU")
         return
     u_max = deslocamento_maximo_norma2(u_global)
     print(f"  Deslocamento máximo |u| : {u_max:.6e} m")
@@ -355,7 +355,7 @@ def _print_jacobi(beta, u_free, info, u_global, modo):
 def _print_gs(beta, u_free, info, u_global, modo):
     _header("4", "GAUSS-SEIDEL")
     if u_free is None:
-        print("DIVERGIU")
+        print("  ⚠  DIVERGIU")
         return
     u_max = deslocamento_maximo_norma2(u_global)
     print(f"  Deslocamento máximo |u| : {u_max:.6e} m")
@@ -438,7 +438,7 @@ def simulador_interativo(coordenadas, conectividade, lista_u, fator_escala=50):
 # ============================================
 print("=" * 55)
 print("  RESOLUÇÃO DA TRELIÇA — LOOP PRINCIPAL")
-print(f"  Betas: {BETA_MIN} -> {BETA_MAX}  |  Modo: {MODO_PRINT.upper()}")
+print(f"  Betas: {BETA_MIN} → {BETA_MAX}  |  Modo: {MODO_PRINT.upper()}")
 metodos_ativos = [
     nome for flag, nome in [
         (RODAR_GAUSS,        "Gauss"),
@@ -461,9 +461,9 @@ lista_u_todos_betas = []   # guarda u_global (LU ou Gauss, o que estiver ativo) 
 for beta in range(BETA_MIN, BETA_MAX + 1):
     f_atual = f_free * beta
 
-    print(f"\n{'-' * 55}")
-    print(f"  Beta = {beta}   ->   F = {1000 * beta} N")
-    print(f"{'-' * 55}")
+    print(f"\n{'━' * 55}")
+    print(f"  β = {beta}   →   F = {1000 * beta} N")
+    print(f"{'━' * 55}")
 
     # --- Gauss ---
     if RODAR_GAUSS:
