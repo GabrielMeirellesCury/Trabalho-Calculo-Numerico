@@ -1,9 +1,9 @@
 import numpy as np
 
 # dados
-E = 200e9          # Módulo de Young [Pa]
-A = 1e-4           # Área da seção transversal [m²]
-F = 1000           # Força aplicada [N], por exemplo beta = 1
+E = 200e9          
+A = 1e-4           
+F = 1000           
 
 n_nos = 8
 n_gdl = 2 * n_nos  # Cada nó possui 2 graus de liberdade (x e y)
@@ -45,9 +45,7 @@ conectividade = np.array([
 # inicializando a matriz global K (K_global)
 K = np.zeros((n_gdl, n_gdl))
 
-# =======================================================
 # 1: montando a matriz K_global --> assemnly
-# ========================================================
 
 for e in range(len(conectividade)):
 
@@ -98,26 +96,17 @@ for e in range(len(conectividade)):
 
             K[linha_global, coluna_global] += k_local[a, b]
 
-
-# ========================================================
 # 2: montando o vetor global de forças f (f_global)
-# ========================================================
 
 f = np.zeros(n_gdl)
 f[1] = -F
 
-
-# =========================================================
 # 3: definindo quais são os graus de liberdade restringidos
-# =========================================================
 
 # graus de liberdade restringidos: 2, 3 e 15
 gdl_restringidos = np.array([2, 3, 15])
 
-
-# =========================================================
 # 4: definindo quais são os graus de liberdade livres
-# =========================================================
 
 # se os graus de liberdade restringidos são "2, 3 e 15", os livres são o resto
 todos_gdl = np.arange(n_gdl)
@@ -127,18 +116,12 @@ gdl_livres = np.array([
     if gdl not in gdl_restringidos
 ])
 
-
-# =========================================================
 # 5: construindo o sistema reduzido (K_free u_free = f_free)
-# =========================================================
 
 K_free = K[np.ix_(gdl_livres, gdl_livres)]
 f_free = f[gdl_livres]
 
-
-# =========================================================
 # 6: definindo o vetor de deslocamentos livres (u_free)
-# =========================================================
 
 # aqui, apenas mostramos quais deslocamentos aparecem em u_free
 u_free_indices = gdl_livres.copy()
@@ -150,10 +133,7 @@ u_free_indices = gdl_livres.copy()
     # ...
     # u_free[12] corresponde a u[14]
 
-
-# =========================================================
 # 7: mostrando o sistema reduzido (K_free u_free = f_free) e as outras infos.
-# =========================================================
 
 if __name__ == "__main__":
     print("Matriz global K:")

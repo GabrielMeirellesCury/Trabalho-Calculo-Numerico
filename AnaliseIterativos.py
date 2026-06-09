@@ -6,9 +6,8 @@ print("=" * 60)
 print("INICIANDO ANÁLISE PARA O RELATÓRIO (ITENS 3.iii e 3.iv)")
 print("=" * 60)
 
-# ====================================================================
 # ITEM 3.iv: CRITÉRIOS DE CONVERGÊNCIA (Para colocar no texto)
-# ====================================================================
+
 print("\n>>> 3.iv: AVALIAÇÃO DOS CRITÉRIOS DE CONVERGÊNCIA <<<")
 
 A = np.array(K_free)
@@ -56,10 +55,8 @@ print(f"Todos os autovalores são positivos? {is_spd}")
 if is_spd:
     print("Conclusão: A matriz é Simétrica Positiva Definida. Logo, Gauss-Seidel TEM CONVERGÊNCIA GARANTIDA teoricamente.")
 
-
-# ====================================================================
 # ITEM 3.iii: INFLUÊNCIA DA TOLERÂNCIA
-# ====================================================================
+
 print("\n\n>>> 3.iii: INFLUÊNCIA DA TOLERÂNCIA NO CRITÉRIO DE PARADA <<<")
 print("(Testando com Força Base F = 1000 N)")
 

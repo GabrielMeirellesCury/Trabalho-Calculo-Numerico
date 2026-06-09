@@ -5,9 +5,7 @@ from ProjetoTrelica import coordenadas, conectividade
 # valores do "ProjetoTrelica" importados
 from ProjetoTrelica import K_free, f_free, gdl_livres, n_gdl, F
 
-# ============================================================
-#   CONFIGURAÇÕES DAS SAIDAS!!!!
-# ============================================================
+#  CONFIGURAÇÕES DAS SAIDAS
 
 # METODOS
 RODAR_GAUSS        = True
@@ -17,7 +15,7 @@ RODAR_GAUSS_SEIDEL = True
 
 # RANGE QUE OS BETAS VAO PERCORRER
 BETA_MIN = 1
-BETA_MAX = 5
+BETA_MAX = 100
 
 # TOL E LIMITE DE ITERACOES
 TOL_ITERATIVOS   = 1e-10
@@ -35,9 +33,8 @@ MOSTRAR_GRAFICO_FORCA_DESL   = True
 #Amplificacao visual na trelica deformada
 FATOR_ESCALA = 100
 
-# ============================================
 # FUNÇÕES AUXILIARES
-# ============================================
+
 def _copia_matriz(A):
     return [linha[:] for linha in A]
 
@@ -88,10 +85,8 @@ def reconstruir_u_global(u_free, n_gdl, gdl_livres):
         u[gdl_livres[a]] = u_free[a]
     return u
 
-
-# ============================================
 # 1. ELIMINAÇÃO DE GAUSS
-# ============================================
+
 def elimGauss(A, b):
     n = len(A)
     A = _copia_matriz(A)
@@ -131,10 +126,8 @@ def resolver_sistema_gauss(K_free, f_free):
     info["n_ops_total"] = info["n_ops_eliminacao"] + info["n_ops_retro"]
     return u_free, info
 
-
-# ============================================
 # 2. FATORAÇÃO LU
-# ============================================
+
 def decomposicao_LU_pivotamento_parcial(A):
     n = len(A)
     p = list(range(n))
@@ -208,10 +201,8 @@ def resolver_LU_fatorado(L, U, p, f_free):
     info["n_ops_total"] = n_ops_resolucao
     return u_free, info
 
-
-# ============================================
 # 3. MÉTODO DE JACOBI
-# ============================================
+
 def jacobi(A, b, x0=None, tol=1e-10, maxIteracoes=1000):
     n = len(A)
     if x0 is None:
@@ -258,10 +249,8 @@ def resolver_sistema_jacobi(K_free, f_free, x0=None, tol=1e-10, maxIteracoes=100
     }
     return u_free, info
 
-
-# ============================================
 # 4. MÉTODO DE GAUSS-SEIDEL
-# ============================================
+
 def gauss_seidel(A, b, x0=None, tol=1e-10, maxIteracoes=1000):
     n = len(A)
     if x0 is None:
@@ -307,10 +296,8 @@ def resolver_sistema_gauss_seidel(K_free, f_free, x0=None, tol=1e-10, maxIteraco
     }
     return u_free, info
 
-
-# ============================================
 # FUNÇÕES DE PRINT POR MÉTODO
-# ============================================
+
 def _header(numero, nome):
     print(f"\n{'=' * 55}")
     print(f"  {numero}. MÉTODO: {nome}")
@@ -365,10 +352,8 @@ def _print_gs(beta, u_free, info, u_global, modo):
         print(f"  Operações — Por iteração: {info['n_ops_por_iteracao']}  |  Total: {info['n_ops_total']} flops")
         print(f"  Vetor global u [m]:\n  {u_global}")
 
-
-# ============================================
 # SIMULADOR INTERATIVO (sem alteração)
-# ============================================
+
 def simulador_interativo(coordenadas, conectividade, lista_u, fator_escala=50):
     fig, ax = plt.subplots(figsize=(10, 6))
     plt.subplots_adjust(bottom=0.25)
@@ -432,10 +417,8 @@ def simulador_interativo(coordenadas, conectividade, lista_u, fator_escala=50):
     update(beta_min_slider)
     plt.show()
 
-
-# ============================================
 # LOOP PRINCIPAL
-# ============================================
+
 print("=" * 55)
 print("  RESOLUÇÃO DA TRELIÇA — LOOP PRINCIPAL")
 print(f"  Betas: {BETA_MIN} -> {BETA_MAX}  |  Modo: {MODO_PRINT.upper()}")
@@ -465,13 +448,13 @@ for beta in range(BETA_MIN, BETA_MAX + 1):
     print(f"  Beta = {beta}   ->   F = {1000 * beta} N")
     print(f"{'-' * 55}")
 
-    # --- Gauss ---
+    # Gauss 
     if RODAR_GAUSS:
         u_free_gauss, info_gauss = resolver_sistema_gauss(K_free, f_atual)
         u_gauss = reconstruir_u_global(u_free_gauss, n_gdl, gdl_livres)
         _print_gauss(beta, u_free_gauss, info_gauss, u_gauss, MODO_PRINT)
 
-    # --- LU ---
+    # LU 
     if RODAR_LU:
         u_free_lu, info_lu = resolver_LU_fatorado(L_lu, U_lu, p_lu, f_atual)
         e_primeiro = (beta == BETA_MIN)
@@ -484,7 +467,7 @@ for beta in range(BETA_MIN, BETA_MAX + 1):
     elif RODAR_GAUSS:
         lista_u_todos_betas.append(u_gauss.copy())
 
-    # --- Jacobi ---
+    #  Jacobi 
     if RODAR_JACOBI:
         u_free_jac, info_jac = resolver_sistema_jacobi(
             K_free, f_atual, tol=TOL_ITERATIVOS, maxIteracoes=MAX_ITER
@@ -500,10 +483,8 @@ for beta in range(BETA_MIN, BETA_MAX + 1):
         u_gs = reconstruir_u_global(u_free_gs if u_free_gs else [0]*len(gdl_livres), n_gdl, gdl_livres)
         _print_gs(beta, u_free_gs, info_gs, u_gs, MODO_PRINT)
 
-
-# ============================================
 # GRÁFICOS
-# ============================================
+
 if lista_u_todos_betas and MOSTRAR_SIMULADOR_INTERATIVO:
     print("\nAbrindo Simulação Interativa...")
     simulador_interativo(coordenadas, conectividade, lista_u_todos_betas, fator_escala=FATOR_ESCALA)
